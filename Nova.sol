@@ -30,24 +30,26 @@ contract NOVANFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     uint256 public batchSize = 300;
 
     /// @notice 初始化 NFT 合约并铸造初始代币
-    /// @param initialOwner 初始所有者地址
-    constructor(address initialOwner)
+    /// @param initialOwner 初始所有者地址（合约拥有者）
+    /// @param nftRecipient 接收初始铸造 NFT 的地址
+    constructor(address initialOwner, address nftRecipient)
         ERC721("NOVA_NFT", "NOVA")
         Ownable(initialOwner)
     {
-        _baseTokenURI = "https://raw.githubusercontent.com/chro-dev/Nova_nft/main/nova.jpg";
+        _baseTokenURI = "https://raw.githubusercontent.com/chro-dev/Nova_nft/refs/heads/main/metadata/";
         // 在构造函数中先铸造第一批
         uint256 firstBatch = batchSize;
         if (firstBatch > TARGET_SUPPLY) {
             firstBatch = TARGET_SUPPLY;
         }
         for (uint256 i = 0; i < firstBatch; i++) {
-            _mintTo(initialOwner);
+            _mintTo(nftRecipient);  // 铸造给 nftRecipient
         }
     }
 
     /// @notice 批量铸造剩余的 NFT
-    function batchMint() external onlyOwner {
+    /// @param to 接收 NFT 的地址
+    function batchMint(address to) external onlyOwner {
         uint256 currentSupply = totalSupply();
         require(currentSupply < TARGET_SUPPLY, "Minting completed");
         
@@ -55,7 +57,7 @@ contract NOVANFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         uint256 currentBatchSize = remaining > batchSize ? batchSize : remaining;
         
         for (uint256 i = 0; i < currentBatchSize; i++) {
-            _mintTo(msg.sender);
+            _mintTo(to);  // 铸造给指定的地址 to
         }
     }
 
@@ -89,24 +91,21 @@ contract NOVANFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     /// @param quantity 要铸造的数量
     function mint(address to, uint256 quantity) external onlyOwner {
         require(to != address(0), "Invalid address");
-        require(quantity > 0, "amout must more than 0");
+        require(quantity > 0, "Amount must be greater than 0");
 
         for (uint256 i = 0; i < quantity; i++) {
             _mintTo(to);
         }
     }
 
-    /// @notice 分发 ERC20 代币给所有 NFT 持有者
-    /// @dev 每个 NFT 获得相同数量的代币，防止重入攻击
-
     /// @notice 开始一轮新的分红
     function startDistribution() external nonReentrant {
         require(!_isDistributing, "Distribution in progress");
         uint256 contractBalance = dividendToken.balanceOf(address(this));
-        require(contractBalance > 0, "no token can be distributed");
+        require(contractBalance > 0, "No token can be distributed");
         
         uint256 totalNFTs = totalSupply();
-        require(totalNFTs > 0, "no nfts");
+        require(totalNFTs > 0, "No NFTs");
         
         _currentDistributionBalance = contractBalance;
         _lastProcessedIndex = 0;
@@ -147,13 +146,6 @@ contract NOVANFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         uint256 currentSupply
     ) {
         return (_isDistributing, _lastProcessedIndex, totalSupply());
-    }
-
-    /// @notice 修改批量处理数量
-    /// @param newBatchSize 新的批量处理数量
-    function setBatchSize(uint256 newBatchSize) external onlyOwner {
-        require(newBatchSize > 0, "Batch size must be greater than 0");
-        batchSize = newBatchSize;
     }
 
     /// @notice 紧急提取合约中的代币
