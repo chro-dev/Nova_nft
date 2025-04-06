@@ -27,24 +27,27 @@ contract NOVANFT is ERC721Enumerable, Ownable, ReentrancyGuard {
 
     // 常量定义
     uint256 public constant TARGET_SUPPLY = 1493;
-    uint256 public batchSize = 300;
+    uint256 public batchSize = 200;
 
     /// @notice 初始化 NFT 合约并铸造初始代币
-    /// @param initialOwner 初始所有者地址（合约拥有者）
-    /// @param nftRecipient 接收初始铸造 NFT 的地址
-    constructor(address initialOwner, address nftRecipient)
+
+    constructor()
         ERC721("NOVA_NFT", "NOVA")
-        Ownable(initialOwner)
+        Ownable(msg.sender)
     {
         _baseTokenURI = "https://raw.githubusercontent.com/chro-dev/Nova_nft/refs/heads/main/metadata/";
         // 在构造函数中先铸造第一批
-        uint256 firstBatch = batchSize;
-        if (firstBatch > TARGET_SUPPLY) {
-            firstBatch = TARGET_SUPPLY;
-        }
-        for (uint256 i = 0; i < firstBatch; i++) {
-            _mintTo(nftRecipient);  // 铸造给 nftRecipient
-        }
+        // uint256 firstBatch = batchSize;
+        // if (firstBatch > TARGET_SUPPLY) {
+        //     firstBatch = TARGET_SUPPLY;
+        // }
+        // for (uint256 i = 0; i < firstBatch; i++) {
+        //     _mintTo(nftRecipient);  // 铸造给 nftRecipient
+        // }
+    }
+
+    function setBatchsize(uint256 _size)external onlyOwner{
+        batchSize = _size;
     }
 
     /// @notice 批量铸造剩余的 NFT
